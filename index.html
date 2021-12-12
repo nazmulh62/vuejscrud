@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='utf-8'>
+    <title>Vuejs</title>
+    <link rel="stylesheet" type="text/css" href="css/style.css">
+</head>
+<body>
+    <!-- conditional rendering -->
+    <div class="app">
+      <div class="container">
+          <div class="row">
+              <h4 class="float-left">All Users</h4>
+              <button class="float-right" @click="userAddModel = true"><a href="#openModal-add">Add New User</a></button>
+         </div>
+
+         <div v-if="successMessage" class="alert alert-success">{{ successMessage }}<button @click="clearMessage">X</button>
+         </div>
+         <div v-if="errorMessage" class="alert alert-error">{{ errorMessage }}<button @click="clearMessage">X</button>
+        </div>
+
+          <table class="table table-bordered data-table">
+            <thead style="background-color: green;color: #fff;">
+            <tr>
+              <th>ID</th>
+              <th>Name</th>
+              <th>Username</th>
+              <th>Email</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+            <tr v-for="user in users">
+              <td>{{ user.id }}</td>
+              <td>{{ user.name }}</td>
+              <td>{{ user.username }}</td>
+              <td>{{ user.email }}</td>
+              <td>
+                <button @click="userUpdateModel = true; setUpdateData(user)"><a href="#openModal-edit">Edit</a></button>
+                <button @click="deleteUser(user.id);">Delete</button>
+              </td>
+            </tr>
+          </table>
+      </div>
+
+
+  <!--User Add modals-->
+  <div id="openModal-add" class="modalDialog" v-if="userAddModel">
+      <div>
+         <a href="#close" title="Close" class="close" @click="userAddModel = false">X</a>
+         <h2>Add New User</h2>
+         <form>
+                <table>
+                   <tr>
+                      <th><label>Name</label></th>
+                      <td><input type="text" v-model="form.name" required="true"></td>
+                   </tr> 
+                   <tr>
+                      <th><label>Username</label></th>
+                      <td><input type="text" v-model="form.username" required="true"></td>
+                   </tr>                 
+                    <tr>
+                      <th><label>Email</label></th>
+                      <td><input type="email" v-model="form.email" required="true"></td>
+                   </tr> 
+                   <tr>
+                      <th></th>
+                      <td><button type="button" @click="userAddModel = false; addNewUser();">Save</button></td>
+                   </tr>
+                </table>
+              </form>
+          </div>
+      </div>
+  <!--User Add modals-->
+
+  <!--User Update modals-->
+  <div id="openModal-edit" class="modalDialog" v-if="userUpdateModel">
+      <div>
+         <a href="#close" title="Close" class="close" @click="userUpdateModel = false">X</a>
+         <h2>Update Usre Info</h2>
+         <form>
+                <table>
+                   <tr>
+                      <th><label>Name</label></th>
+                      <td><input type="text" v-model="updateUser.name"></td>
+                   </tr> 
+                   <tr>
+                      <th><label>Username</label></th>
+                      <td><input type="text" v-model="updateUser.username"></td>
+                   </tr>                 
+                    <tr>
+                      <th><label>Email</label></th>
+                      <td><input type="email" v-model="updateUser.email"></td>
+                   </tr> 
+                   <tr>
+                      <th></th>
+                      <td><button type="button" @click="userUpdateModel = false; updateUserData();">Update</button></td>
+                   </tr>
+                </table>
+              </form>
+          </div>
+      </div>
+  <!--User Update modals-->
+
+  
+
+     </div>
+
+    <script type="text/javascript" src='js/axios.min.js'></script>
+    <script type="text/javascript" src='js/vue.js'></script>
+    <script type="text/javascript">
+        let app = new Vue({
+            el:".app",
+            data:{
+              users: [],
+              form: {
+                name: null,
+                username: null,
+                email: null,
+              },
+              updateUser: {
+
+              },
+              userAddModel: false,
+              userUpdateModel: false,
+              // Show Error Message
+              errorMessage: null,
+              // Show Success Message
+              successMessage: null,
+            },
+            methods: {
+              getData: function(){
+                axios.get("http://localhost/vuejscrud/api.php?action=read")
+                .then(function(response){
+                  if(!response.data.error){
+                    app.users = response.data.users;
+                  }else{
+                    app.errorMessage = response.data.message;
+                  }
+                });
+              },
+              
+            // Add User
+            addNewUser: function(){
+                //alert("test");
+                let formData = this.toFormData(this.form);
+                axios.post("http://localhost/vuejscrud/api.php?action=create",formData)
+                .then(function(response){
+                  if(response.data.error){
+                    app.errorMessage = response.data.message;
+                    //console.log(0);
+                  }else{
+                  
+                  app.form.name = null;
+                  app.form.username = null;
+                  app.form.email = null;
+                  app.successMessage = response.data.message;
+                  // Show/Get Data For View Table
+                  app.getData();
+                  }
+                });
+             },           
+
+             // Update User
+            updateUserData: function(){
+                //alert("test");
+                let formData = this.toFormData(this.updateUser);
+                axios.post("http://localhost/vuejscrud/api.php?action=update",formData)
+                .then(function(response){
+                  console.log(response.data);
+                  if(response.data.error){
+                    app.errorMessage = response.data.message;
+                    //console.log(0);
+                  }else{
+                  app.updateUser = null;
+                  app.successMessage = response.data.message;
+                   // Show/Get Data For View Table
+                   app.getData();
+                  }
+                });
+             },
+
+             // Delete User Data
+             deleteUser: function(id){
+               let formData = this.toFormData({ id: id });
+                axios.post("http://localhost/vuejscrud/api.php?action=delete",formData)
+                .then(function(response){
+                  if(response.data.error){
+                    app.errorMessage = response.data.message;
+                    //console.log(0);
+                  }else{
+                   app.successMessage = response.data.message;
+                   // Show/Get Data For View Table
+                   app.getData();
+                  }
+                });
+                //console.log(id);
+             },
+
+             // Method
+             setUpdateData: function(user){
+                this.updateUser = user;
+             },
+            
+             // Method to get data
+             toFormData: function(obj){
+                let data = new FormData();
+                for(let key in obj){
+                  data.append(key, obj[key]);
+                }
+                return data;
+             },
+
+             // Method Clear Message  
+             clearMessage:function(){
+                this.errorMessage = null;
+                this.successMessage = null;
+              }
+
+            },
+
+            mounted: function(){
+              this.getData();
+            }
+
+        });
+    </script>
+</body>
+</html>
